@@ -14,3 +14,39 @@
     previous-hash: (optional (buff 32))
   }
 )
+
+(define-map creator-contents
+  { creator: principal }
+  { content-list: (list 100 (buff 32)) }
+)
+
+(define-map license-types
+  { license-id: (string-utf8 64) }
+  { 
+    description: (string-utf8 512),
+    terms-url: (string-utf8 256)
+  }
+)
+
+;; Error codes
+(define-constant ERR-NOT-AUTHORIZED u1)
+(define-constant ERR-ALREADY-REGISTERED u2)
+(define-constant ERR-NOT-FOUND u3)
+(define-constant ERR-LICENSE-NOT-FOUND u4)
+
+;; Public functions
+
+;; Register a new license type
+(define-public (register-license-type (license-id (string-utf8 64)) (description (string-utf8 512)) (terms-url (string-utf8 256)))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) (err ERR-NOT-AUTHORIZED))
+    (map-insert license-types 
+      { license-id: license-id }
+      { 
+        description: description,
+        terms-url: terms-url
+      }
+    )
+    (ok true)
+  )
+)
