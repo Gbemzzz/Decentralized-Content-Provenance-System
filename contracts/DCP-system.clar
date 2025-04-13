@@ -135,3 +135,41 @@
         previous-hash: (some original-hash)
       }
     )
+      ;; Update creator's content list
+    (map-set creator-contents
+      { creator: creator }
+      { content-list: (append contents-list new-hash) }
+    )
+    
+    (ok true)
+  )
+)
+
+;; Read-only functions
+
+;; Get content information by hash
+(define-read-only (get-content-info (content-hash (buff 32)))
+  (map-get? content-registry { content-hash: content-hash })
+)
+
+;; Get all content by a creator
+(define-read-only (get-creator-content-list (creator principal))
+  (map-get? creator-contents { creator: creator })
+)
+
+;; Get license type details
+(define-read-only (get-license-details (license-id (string-utf8 64)))
+  (map-get? license-types { license-id: license-id })
+)
+
+;; Verify content provenance chain
+(define-read-only (verify-provenance-chain (content-hash (buff 32)))
+  (let
+    (
+      (result (list content-hash))
+      (current-content (map-get? content-registry { content-hash: content-hash }))
+    )
+    (asserts! (is-some current-content) (err ERR-NOT-FOUND))
+    (ok (fold verify-provenance-helper (unwrap-panic current-content) result))
+  )
+)
