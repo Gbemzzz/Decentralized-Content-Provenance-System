@@ -173,3 +173,35 @@
     (ok (fold verify-provenance-helper (unwrap-panic current-content) result))
   )
 )
+(define-private (verify-provenance-helper (content-data {
+    creator: principal,
+    title: (string-utf8 256),
+    timestamp: uint,
+    description: (string-utf8 1024),
+    license-type: (string-utf8 64),
+    version: uint,
+    previous-hash: (optional (buff 32))
+  }) (acc (list (buff 32))))
+  (match (get previous-hash content-data)
+    prev-hash (let
+      ((prev-content (map-get? content-registry { content-hash: prev-hash })))
+      (if (is-some prev-content)
+        (append acc prev-hash)
+        acc
+      )
+    )
+    acc
+  )
+)
+
+;; Contract initialization
+(define-data-var contract-owner principal tx-sender)
+
+;; Allow transfer of contract ownership
+(define-public (transfer-ownership (new-owner principal))
+  (begin
+    (asserts! (is-eq tx-sender (var-get contract-owner)) (err ERR-NOT-AUTHORIZED))
+    (var-set contract-owner new-owner)
+    (ok true)
+  )
+)
