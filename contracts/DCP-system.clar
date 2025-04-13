@@ -50,3 +50,37 @@
     (ok true)
   )
 )
+;; Register new content
+(define-public (register-content 
+  (content-hash (buff 32))
+  (title (string-utf8 256))
+  (description (string-utf8 1024))
+  (license-type (string-utf8 64))
+  (previous-hash (optional (buff 32))))
+  
+  (let
+    (
+      (creator tx-sender)
+      (timestamp (get-block-info? time (- block-height u1)))
+      (contents-list (default-to (list) (get content-list (map-get? creator-contents { creator: creator }))))
+    )
+    
+    ;; Verify the content isn't already registered
+    (asserts! (is-none (map-get? content-registry { content-hash: content-hash })) (err ERR-ALREADY-REGISTERED))
+    
+    ;; Verify license type exists
+    (asserts! (is-some (map-get? license-types { license-id: license-type })) (err ERR-LICENSE-NOT-FOUND))
+    
+    ;; Register the content
+    (map-set content-registry
+      { content-hash: content-hash }
+      {
+        creator: creator,
+        title: title,
+        timestamp: (default-to u0 timestamp),
+        description: description,
+        license-type: license-type,
+        version: u1,
+        previous-hash: previous-hash
+      }
+    )
